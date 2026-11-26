@@ -42,13 +42,13 @@
 
 extern void start_text () asm ("exec");
 
-asm ("
-	.globl	mcount
-mcount:	movel	a1,sp@-		| Save A1 as it might be used to store the
-	jsr	_mcount		| address of a structure
-	movel	sp@+,a1
-	rts
-");
+asm (
+"	.globl	mcount\n"
+"mcount:	movel	a1,sp@-		| Save A1 as it might be used to store the\n"
+"	jsr	_mcount		| address of a structure\n"
+"	movel	sp@+,a1\n"
+"	rts\n"
+);
 
 void moncontrol(int mode);
 

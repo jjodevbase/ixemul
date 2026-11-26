@@ -57,9 +57,18 @@
 void *ixemulbase;               // Used by the glue functions
 struct Library *ixrealbase;     // The real ixemul base (may be identical to ixemulbase, though)
 
+/* ENTRY and exec_entry are only referenced from the asm below, which
+   GCC 3.1 and later don't look into: without "used" they drop them as
+   unused static functions. */
+#if defined(__GNUC__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))
+#define IX_USED __attribute__((used))
+#else
+#define IX_USED
+#endif
+
 static int start_stdio(int, char **, char **);
-static int exec_entry(struct Library *ixembase, int argc, char *argv[], char *env[], long os);
-static int ENTRY();
+static int exec_entry(struct Library *ixembase, int argc, char *argv[], char *env[], long os) IX_USED;
+static int ENTRY(void) IX_USED;
 
 int extend_stack_ix_exec_entry(int argc, char **argv, char **environ, int *real_errno, 
 	                       int (*main)(int, char **, char **));
@@ -74,7 +83,7 @@ void __init_stk_limit(void **limit, unsigned long argbytes);
  * opened...
  */
 
-extern int main();
+extern int main(int, char **, char **);
 
 /*
  * GCC 6.x emits constructor and destructor function pointers into
@@ -115,8 +124,13 @@ static void
 ix_run_ctors(void)
 {
   const ix_ctor_func *first = __CTOR_LIST__ + 1;
-  const ix_ctor_func *p = first;
+  const ix_ctor_func *p;
 
+  /* The linker puts the entries after the one-element __CTOR_LIST__, so
+     hide where first points: GCC would take the walk past the end of the
+     array for undefined behaviour and drop it. */
+  __asm__ ("" : "+r" (first));
+  p = first;
   while (*p)
     ++p;
   while (p > first)
@@ -145,27 +159,27 @@ ix_run_ctors(void)
  */
 
 
-asm("
-	.text
-
-	jra	_ENTRY		| by default jump to normal AmigaOS startup
-	.align	2		| ensure exec starts at byte offset 4
-
-	| this is a struct exec, for now only OMAGIC is supported
-	.globl	exec
-exec:
-	.word	___machtype	| a_mid
-	.word	0407		| a_magic = OMAGIC
-	.long	___text_size	| a_text
-	.long	___data_size	| a_data
-	.long	___bss_size	| a_bss
-	.long	0		| a_syms
-	.long	_exec_entry	| a_entry
-	.long	0		| a_trsize
-	.long	0		| a_drsize
-
-	| word alignment is guaranteed
-");
+asm(
+"	.text\n"
+"\n"
+"	jra	_ENTRY		| by default jump to normal AmigaOS startup\n"
+"	.align	2		| ensure exec starts at byte offset 4\n"
+"\n"
+"	| this is a struct exec, for now only OMAGIC is supported\n"
+"	.globl	exec\n"
+"exec:\n"
+"	.word	___machtype	| a_mid\n"
+"	.word	0407		| a_magic = OMAGIC\n"
+"	.long	___text_size	| a_text\n"
+"	.long	___data_size	| a_data\n"
+"	.long	___bss_size	| a_bss\n"
+"	.long	0		| a_syms\n"
+"	.long	_exec_entry	| a_entry\n"
+"	.long	0		| a_trsize\n"
+"	.long	0		| a_drsize\n"
+"\n"
+"	| word alignment is guaranteed\n"
+);
 
 extern  int ix_expand_cmd_line;	/* expand wildcards ? */
 int     h_errno = 0;		/* networking error code */
@@ -181,7 +195,7 @@ int     errno = 0;		/* error results from the library come in here.. */
 char    *_ctype_;		/* we use a pointer into the library, this is static anyway */
 int     sys_nerr;		/* number of system error codes */
 struct  ExecBase *SysBase;      /* ExecBase pointer */
-struct  Library *DOSBase;       /* DOSBase pointer */
+struct  DosLibrary *DOSBase;    /* DOSBase pointer */
 
 struct  __sFILE **__sF;         /* pointer to stdin/out/err */
 static  char *dummy_environ = 0;        /* dummy environment */
@@ -434,7 +448,7 @@ ENTRY(void)
 void ix_get_variables(int from_vfork_setup_child)
 {
   /* more to follow ;-) */
-  ix_get_vars(12, &_ctype_, &sys_nerr, (struct Library **)&SysBase, &DOSBase, &__sF,
+  ix_get_vars(12, &_ctype_, &sys_nerr, (struct Library **)&SysBase, (struct Library **)&DOSBase, &__sF,
               &environ, (from_vfork_setup_child ? &environ : NULL),
               (from_vfork_setup_child ? &errno : NULL), &h_errno,
               &_res, &_res_socket, NULL);
@@ -482,43 +496,39 @@ start_stdio(int argc, char **argv, char **env)
   return main(argc, argv, env);
 }
 
-asm("
-	.text
-
-_extend_stack_ix_startup:
-"
+asm(
+"	.text\n"
+"\n"
+"_extend_stack_ix_startup:\n"
 #ifdef BASECRT0
   #ifdef LBASE
-"	movel	a4@(___stack:L),d0"
+"	movel	a4@(___stack:L),d0\n"
   #else
-"	movel	a4@(___stack:W),d0"
+"	movel	a4@(___stack:W),d0\n"
   #endif
 #else
-"	movel	___stack,d0"
+"	movel	___stack,d0\n"
 #endif
-"
-	beq	no_stkext1
-	jbsr	___stkext_startup
-no_stkext1:
-	jmp	_ix_startup
-
-_extend_stack_ix_exec_entry:
-"
+"	beq	no_stkext1\n"
+"	jbsr	___stkext_startup\n"
+"no_stkext1:\n"
+"	jmp	_ix_startup\n"
+"\n"
+"_extend_stack_ix_exec_entry:\n"
 #ifdef BASECRT0
   #ifdef LBASE
-"	movel	a4@(___stack:L),d0"
+"	movel	a4@(___stack:L),d0\n"
   #else
-"	movel	a4@(___stack:W),d0"
+"	movel	a4@(___stack:W),d0\n"
   #endif
 #else
-"	movel	___stack,d0"
+"	movel	___stack,d0\n"
 #endif
-"
-	beq	no_stkext2
-	jbsr	___stkext_startup
-no_stkext2:
-	jmp	_ix_exec_entry
-");
+"	beq	no_stkext2\n"
+"	jbsr	___stkext_startup\n"
+"no_stkext2:\n"
+"	jmp	_ix_exec_entry\n"
+);
 
 #ifndef BASECRT0
 #ifdef CRT0
