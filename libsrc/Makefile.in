@@ -77,15 +77,17 @@ mcrt0.o:	crt0.c version.h gmon.c gmon.h
 gcrt0.o:	mcrt0.o
 		cp $< $@
 
+# Each archive has its own scratch directory, so that make -j can build
+# them at the same time.
 define createlib
-	$(RM) -r $@ tempobj
-	@mkdir tempobj
-	cp $(OBJ) tempobj
+	$(RM) -r $@ $@.tmp
+	@mkdir $@.tmp
+	cp $(OBJ) $@.tmp
 	cp $< $@
-	@(cd tempobj; for i in $(filter-out $< $(OBJ),$^) ; do echo extracting library $$i ; $(AR) x ../$$i ; done)
-	(cd tempobj; $(AR) q ../$@ *.o)
+	@(cd $@.tmp; for i in $(filter-out $< $(OBJ),$^) ; do echo extracting library $$i ; $(AR) x ../$$i ; done)
+	(cd $@.tmp; $(AR) q ../$@ *.o)
 	$(RANLIB) $@
-	$(RM) -r tempobj
+	$(RM) -r $@.tmp
 endef
 
 libc.a libc_p.a libbc.a libb32c.a: $(OBJ)
@@ -108,7 +110,7 @@ version.h:	$(srcdir)/../library/parse_version.c $(srcdir)/../version.in
 		rm -f parse_version
 
 clean:
-		rm -rf tempobj *.[oa]
+		rm -rf *.tmp *.[oa]
 
 clobber:	clean
 		rm -f Makefile version.h

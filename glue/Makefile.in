@@ -70,7 +70,9 @@ $(LIB):		gen_glue
 		$(AR) r $@ *.o
 		rm -f *.o
 
-$(LIB_P):	gen_glue
+# Both archives are made from the *.o files gen_glue writes here, so one
+# waits for the other
+$(LIB_P):	gen_glue $(LIB)
 		rm -f *.o
 		./gen_glue profiling
 		$(AR) r $@ *.o

@@ -144,6 +144,11 @@ base-cpu-fpu-targets := $(foreach d, $(BASECPUFPU), $(base-cpu-fpu-types))
 
 
 ### Make all targets and libsrc, utils and man pages.
+### The directories are built in this order, since ixnet and the library
+### link with the archives of the ones before them; make -j still builds the
+### files of each directory in parallel.
+
+.NOTPARALLEL:
 
 all:	gcc-ok $(base-targets) $(cpu-os-targets) $(cpu-fpu-os-targets) $(base-cpu-fpu-targets)
 	@(cd libsrc && $(MAKE) $(FLAGS_TO_PASS))

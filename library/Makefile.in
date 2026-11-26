@@ -183,6 +183,9 @@ ii.o:		$(true_srcdir)/../include/user.h
 # Force -m68020 & -m68881 so the assembler won't bitch about fpu
 # instructions.  This means we have to leave out FLAVOR_CFLAGS.
 
+# setjmp.c, compiled in ss.c, includes the generated ix_internals.h
+ss.o:		ix_internals.h
+
 trap.o:		trap.S ix_internals.h
 			$(CC) $(STD_CFLAGS) -traditional -c -m68020 -m68881 $< -o $@
 
