@@ -76,8 +76,9 @@ $(LIB_P):	gen_glue
 		$(AR) r $@ *.o
 		rm -f *.o
 
+# gen_glue runs on the build machine, so it is built with the native compiler
 gen_glue:	gen_glue.c $(srcdir)/../include/sys/syscall.def
-		$(CC) $(ALL_CFLAGS) $< -o $@
+		gcc $(CFLAGS) $< -o $@
 
 clean:
 		rm -rf *baserel*

@@ -211,12 +211,10 @@ tracecntl.o:	$(true_srcdir)/tracecntl.c
 tracecntl.ot:	$(true_srcdir)/tracecntl.c
 				$(CC) $(ALL_CFLAGS) -DTRACE_LIBRARY -ffixed-a4 -c $< -o $@
 
-ix_internals.h:	create_header
-				./create_header >$@
-
-create_header:	$(true_srcdir)/create_header.c $(true_srcdir)/../include/user.h $(true_srcdir)/ixemul.h
-				gcc $(CFLAGS) $(INCS) -I$(true_srcdir) $(OTHER_CFLAGS) $(DEFS) $< -o $@
-				chmod u+x $@
+ix_internals.h:	$(true_srcdir)/create_header.c $(true_srcdir)/../include/user.h $(true_srcdir)/ixemul.h
+				$(CC) $(CFLAGS) $(INCS) -I$(true_srcdir) $(OTHER_CFLAGS) $(DEFS) -S $< -o create_header.s
+				echo "/* Generated from create_header.c.  DO NOT EDIT! */" >$@
+				sed -n 's/^->/#define /p' create_header.s >>$@
 
 ii.o tz.o:		version.h
 
@@ -224,7 +222,7 @@ ii.o tz.o:		version.h
 # So force the defines of CPU and FPU via $DEF_CPU_FPU
 
 parse_version: $(true_srcdir)/parse_version.c
-				gcc $(CFLAGS) $(OTHER_CFLAGS) $(DEF_CPU_FPU) $(DEFS) $< -o $@
+				gcc $(CFLAGS) $(filter -D%,$(OTHER_CFLAGS)) $(DEF_CPU_FPU) $(DEFS) $< -o $@
 				chmod u+x $@
 
 # version.in is located in the same directory as parse_version,

@@ -1,14 +1,21 @@
-#include <sys/types.h>
-#include <sys/syscall.h>
-
+/* gen_glue runs on the build machine, so it takes only the system call
+   table from ixemul's headers, not <sys/syscall.h> and the rest. */
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+enum {
+#define SYSTEM_CALL(func, vec) SYS_##func = vec,
+#include "../include/sys/syscall.def"
+#undef SYSTEM_CALL
+};
 
 struct syscall {
   char *name;
   int   vec;
 } syscalls[] = {
 #define SYSTEM_CALL(func,vec) { #func, vec},
-#include <sys/syscall.def>
+#include "../include/sys/syscall.def"
 #undef SYSTEM_CALL
 };
 
