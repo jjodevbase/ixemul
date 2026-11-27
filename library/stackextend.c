@@ -211,7 +211,10 @@ void __stkovf(void)
  * FIXME: This seems to have the potential to break a Forbid() ?!?
  */
 //void atomic_on(sigset_t old)
-void atomic_on(int old)
+/* The asm glue reads OLD back from the caller's argument slot, so the store
+   to it has to happen: hence volatile here and on the StackSwapStruct
+   arguments below.  */
+void atomic_on(volatile int old)
 {
   usetup;
 
@@ -234,7 +237,7 @@ void atomic_off(sigset_t old)
  * Move a stackframe with a minimum of requiredstack bytes to the used list
  * and fill the StackSwapStruct structure.
  */
-static void pushframe(ULONG requiredstack, struct StackSwapStruct *sss, sigset_t *old, int startup)
+static void pushframe(ULONG requiredstack, volatile struct StackSwapStruct *sss, sigset_t *old, int startup)
 {
   struct stackframe *sf;
   ULONG recommendedstack;
@@ -295,7 +298,7 @@ static void pushframe(ULONG requiredstack, struct StackSwapStruct *sss, sigset_t
 /*
  * Allocate a new stackframe with d0 bytes minimum.
  */
-int stkext(struct StackSwapStruct sss, sigset_t old,
+int stkext(volatile struct StackSwapStruct sss, sigset_t old,
  long d0, long d1, long a0, long a1, long a6, long ret1)
 {
   void *callsp = &ret1 + 1;
@@ -306,7 +309,7 @@ int stkext(struct StackSwapStruct sss, sigset_t old,
     return 0; /* User intentionally left area of stackextension */
 
   pushframe(d0, &sss, &old, 0);
-  *(char **)&sss.stk_Pointer -= cpsize;
+  sss.stk_Pointer = (char *)sss.stk_Pointer - cpsize;
   CopyMem(&old, sss.stk_Pointer, cpsize);
   return 1;
 }
@@ -315,7 +318,7 @@ int stkext(struct StackSwapStruct sss, sigset_t old,
  * Allocate a new stackframe with d0 bytes minimum, copy the callers arguments
  * and set his returnaddress (offset d1 from the sp when called) to stk_rst_f
  */
-int stkext_f(struct StackSwapStruct sss, sigset_t old,
+int stkext_f(volatile struct StackSwapStruct sss, sigset_t old,
  long d0, long d1, long a0, long a1, long a6, long ret1)
 {
   void *argtop, *callsp = &ret1 + 1;
@@ -332,7 +335,7 @@ int stkext_f(struct StackSwapStruct sss, sigset_t old,
 
   /* FIXME: is "+ u.u_stk_argbt" really necessary? It's added in pushframe(), too. */
   pushframe(d0 + u.u_stk_argbt, &sss, &old, 0);
-  *(char **)&sss.stk_Pointer -= cpsize;
+  sss.stk_Pointer = (char *)sss.stk_Pointer - cpsize;
   CopyMem(&old, sss.stk_Pointer, cpsize);
   u.u_stk_used->savesp = (char *)callsp + d1; /* store sp */
   *(void **)((char *)sss.stk_Upper - ((char *)argtop - (char *)callsp) + d1)
@@ -363,7 +366,7 @@ static int get_stack_size(struct Process *proc, int stack)
  * return 0 if it is not necessary. If it is, perform almost the same actions
  * as stkext_f.
  */
-int stkext_startup(struct StackSwapStruct sss, sigset_t old,
+int stkext_startup(volatile struct StackSwapStruct sss, sigset_t old,
  long d0, long d1, long a0, long a1, long a6, long ret1)
 {
   void *argtop, *callsp = &ret1 + 1;
@@ -379,7 +382,7 @@ int stkext_startup(struct StackSwapStruct sss, sigset_t old,
   cpsize = (char *)argtop - (char *)&old;
 
   pushframe(stack, &sss, &old, 1);
-  *(char **)&sss.stk_Pointer -= cpsize;
+  sss.stk_Pointer = (char *)sss.stk_Pointer - cpsize;
   CopyMem(&old,sss.stk_Pointer, cpsize);
   u.u_stk_used->savesp = (char *)callsp; /* store sp */
   *(void **)((char *)sss.stk_Upper - ((char *)argtop - (char *)callsp))
@@ -391,7 +394,7 @@ int stkext_startup(struct StackSwapStruct sss, sigset_t old,
  * Move all used stackframes upto (and including) sf to the spares list
  * and fill the StackSwapStruct structure.
  */
-static void popframes(struct stackframe *sf, struct StackSwapStruct *sss)
+static void popframes(struct stackframe *sf, volatile struct StackSwapStruct *sss)
 {
   struct stackframe *sf2;
   usetup;
@@ -423,7 +426,7 @@ static void popframes(struct stackframe *sf, struct StackSwapStruct *sss)
  * != NULL: on the same stackframe (returns sp)
  * == NULL: on another stackframe
  */
-void *stkrst(struct StackSwapStruct sss, sigset_t old,
+void *stkrst(volatile struct StackSwapStruct sss, sigset_t old,
  void *d0, long d1, long a0, long a1, long a6, long ret1)
 {
   void *callsp = &ret1 + 1;
@@ -458,7 +461,7 @@ void *stkrst(struct StackSwapStruct sss, sigset_t old,
 /*
  * return to last stackframe
  */
-void stkrst_f(struct StackSwapStruct sss, sigset_t old,
+void stkrst_f(volatile struct StackSwapStruct sss, sigset_t old,
  long d0, long d1, long a0, long a1, long a6)
 {
   void *callsp = &a6 + 1; /* This one has no returnaddress - it's a fallback for rts */
