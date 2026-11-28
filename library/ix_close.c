@@ -456,7 +456,7 @@ ix_close (struct ixemul_base *ixbase)
 
   /* Delay this until here, since cleanup still needs the user area.
    * Restore task context in both TRAP and NOTRAP builds. */
-  getuser(me) = ix_u->u_otrap_data;
+  setuser(me, ix_u->u_otrap_data);
 
   /* Finally free the user structure itself.
    * No further access to ix_u is valid after this point.

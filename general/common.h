@@ -29,9 +29,9 @@ mulu (unsigned long U, unsigned long V)
     swap	d2
     clrw	d2
     addl	d2,d0"
-    : "=r" (result)
+    : "=&r" (result)
     : "g" (U), "g" (V)
-    : "d0", "d1", "d2", "d3");
+    : "d1", "d2", "d3");
   return result;
 }
 
@@ -77,9 +77,9 @@ mulu (unsigned long U, unsigned long V)
 	dbra	d2,3b;                              	\
                                                         \
    5:"                                         		\
-   : "=r" (rq), "=r" (rr)                               \
+   : "=&r" (rq), "=&r" (rr)                             \
    : "g" (n), "g" (d)                                   \
-   : "d0", "d1", "d2", "d3");                           \
+   : "d2", "d3");                                       \
    q = rq; r = rr;})
 
 #endif

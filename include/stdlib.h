@@ -155,9 +155,13 @@ size_t	 wcstombs __P((char *, const wchar_t *, size_t));
 #if !defined(_ANSI_SOURCE) && !defined(_POSIX_SOURCE)
 #if defined(alloca) && (alloca == __builtin_alloca) && (__GNUC__ < 2)
 void  *alloca __P((int));     /* built-in for gcc */ 
-#else 
-void  *alloca __P((size_t)); 
-#endif /* __GNUC__ */ 
+#else
+void  *alloca __P((size_t));
+#endif /* __GNUC__ */
+#ifdef __GNUC__
+/* no alloca() function exists, so keep the builtin with -fno-builtin too */
+#define alloca(size) __builtin_alloca(size)
+#endif
 
 char	*getbsize __P((int *, long *));
 char	*cgetcap __P((char *, char *, int));

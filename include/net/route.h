@@ -233,10 +233,6 @@ struct route_cb {
 	else \
 		(rt)->rt_refcnt--;
 
-struct	route_cb route_cb;
-struct	rtstat	rtstat;
-struct	radix_node_head *rt_tables[AF_MAX+1];
-
 struct	socket;
 void	 route_init __P((void));
 int	 route_output __P((struct mbuf *, struct socket *));

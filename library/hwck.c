@@ -34,6 +34,7 @@
 #define _KERNEL
 #include <ixemul.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <string.h>
 #include <proto/intuition.h>
 

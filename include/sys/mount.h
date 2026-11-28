@@ -272,8 +272,6 @@ void	vfs_remove __P((struct mount *mp)); /* remove a vfs from mount list */
 int	vfs_lock __P((struct mount *mp));   /* lock a vfs */
 void	vfs_unlock __P((struct mount *mp)); /* unlock a vfs */
 struct	mount *getvfs __P((fsid_t *fsid));  /* return vfs given fsid */
-struct	mount *rootfs;			    /* ptr to root mount structure */
-struct	vfsops *vfssw[];		    /* mount filesystem type table */
 
 #else /* _KERNEL */
 

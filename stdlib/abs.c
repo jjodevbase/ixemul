@@ -28,8 +28,8 @@
 ENTRY(abs)
 asm("
 	movl	sp@(4),d0
-	jge	L1
+	jge	1f
 	negl	d0
-L1:
+1:
 	rts
 ");

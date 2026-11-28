@@ -184,7 +184,6 @@ struct socket {
 #define	sowwakeup(so)	sowakeup((so), &(so)->so_snd)
 
 #ifdef _KERNEL
-u_long	sb_max;
 /* to catch callers missing new second argument to sonewconn: */
 #define	sonewconn(head, connstatus)	sonewconn1((head), (connstatus))
 struct	socket *sonewconn1 __P((struct socket *head, int connstatus));

@@ -10,6 +10,7 @@
 #define _KERNEL
 #include "ixemul.h"
 #include <unistd.h>
+#include <string.h>
 #include <clib/alib_protos.h>
 
 /*

@@ -66,7 +66,6 @@ int
 ix_timer(char *foobar, ...)
 {
   register struct Task	*t_pass	asm ("a1");
-  register u_int	a5 asm ("a5");
   struct Task		*me;
   struct user		*p;
   u_int			current_pc;
@@ -77,21 +76,20 @@ ix_timer(char *foobar, ...)
 
   /*
    * The timer interrupt enters with the target task in a1.
-   * GCC generates a5 as the frame pointer for this varargs function.
-   * Mark both fixed registers as defined at this ABI boundary.
+   * Mark the fixed register as defined at this ABI boundary.
    */
-  __asm__ __volatile__ ("" : "=a" (t_pass), "=a" (a5));
+  __asm__ __volatile__ ("" : "=a" (t_pass));
 
   me = t_pass;
   p = getuser(me);
   current_task = FindTask(0);
 
-  /* find out value of sp on invocation of this function. This is easy,
-   * since gcc generates a 
+  /* find out value of sp on invocation of this function: the frame
+   * pointer is set by a
    *   link a5,#..
-   * at the beginning. So we find sp with a5+4
+   * at the beginning, so we find sp at the frame address + 4
    */
-  sp = a5 + 4;
+  sp = (u_int)__builtin_frame_address (0) + 4;
 
   tim = p->u_timer;
 
@@ -168,25 +166,18 @@ int
 ix_timer (char *foobar, ...)
 {
   u_int			current_pc;
-  register u_int	a5 asm ("a5");
   u_int			sp;
   struct Task		*current_task;
   struct ixnode         *node;
 
-  /*
-   * GCC generates a5 as the frame pointer for this varargs function.
-   * Mark the fixed register as defined at this ABI boundary.
-   */
-  __asm__ __volatile__ ("" : "=a" (a5));
-
   current_task = FindTask(0);
 
-  /* find out value of sp on invocation of this function. This is easy,
-   * since gcc generates a 
+  /* find out value of sp on invocation of this function: the frame
+   * pointer is set by a
    *   link a5,#..
-   * at the beginning. So we find sp with a5+4
+   * at the beginning, so we find sp at the frame address + 4
    */
-  sp = a5 + 4;
+  sp = (u_int)__builtin_frame_address (0) + 4;
 
   /* virtual timer only counts, when current_task == me AND the task is
    * not executing in system time. To get at the current PC, remember (or learn;-))

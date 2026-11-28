@@ -845,7 +845,7 @@ restart:
        */
       switch ((int)p->u_signal[sig]) 
         {
-	case SIG_DFL:
+	case (int)SIG_DFL:
 #if notyet
 	  /*
 	   * Don't take default actions on system processes.
@@ -886,7 +886,7 @@ restart:
 	    return (sig);
 	  /*NOTREACHED*/
 
-	case SIG_IGN:
+	case (int)SIG_IGN:
 	  /*
 	   * Masking above should prevent us ever trying
 	   * to take action on an ignored signal other

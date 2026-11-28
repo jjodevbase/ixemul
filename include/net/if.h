@@ -217,8 +217,6 @@ struct	ifconf {
 #include <net/if_arp.h>
 
 #ifdef _KERNEL
-struct	ifqueue rawintrq;		/* raw packet input queue */
-struct	ifnet *ifnet;
 struct	ifaddr *ifa_ifwithaddr(), *ifa_ifwithnet();
 struct	ifaddr *ifa_ifwithdstaddr();
 #endif _KERNEL
